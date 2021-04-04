@@ -55,11 +55,10 @@ class vwid:
 		form['email'] = self.username
 		response = await self.session.post(LOGIN_HANDLER_BASE+action, data=form)
 		if response.status >= 400:
-			self.log.debug("Email fail")
+			self.log.error("Email fail")
 			return False
 			
 		# Fill form with password
-
 		(form, action) = self.form_from_response(await response.read())
 		form['password'] = self.password
 		response = await self.session.post(LOGIN_HANDLER_BASE+action, data=form, allow_redirects=False)
@@ -69,7 +68,7 @@ class vwid:
 			url = response.headers['Location']
 			if (url.split(':')[0] == "weconnect"):
 				if not ('access_token' in url):
-					print ("Missing access token")
+					self.log.error("Missing access token")
 					return False
 					# Parse query string
 				query_string = url.split('#')[1]
@@ -77,7 +76,7 @@ class vwid:
 				break
 
 			if (response.status != 302):
-				print ("Not redirected")
+				self.log.error("Not redirected")
 				return False
 
 			response = await self.session.get(url, data=form, allow_redirects=False)
@@ -95,7 +94,7 @@ class vwid:
 		}
 		response = await self.session.post(LOGIN_BASE + '/login/v1', json=payload)
 		if response.status >= 400:
-			print ('Login failed %u', response.status)
+			self.log.error("Login failed")
 			# Non 2xx response, failed
 			return False
 		self.tokens = await response.json()
@@ -114,12 +113,10 @@ class vwid:
 		self.headers['Authorization'] = 'Bearer %s' % self.tokens["refreshToken"]
 		
 		response = await self.session.get(LOGIN_BASE + '/refresh/v1', headers=headers)
-
 		if response.status >= 400:
 			return False
 		
 		self.tokens = response.json()
-			
 		self.headers['Authorization'] = 'Bearer %s' % self.tokens["accessToken"]
 
 		return True
