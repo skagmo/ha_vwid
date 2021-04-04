@@ -100,9 +100,10 @@ class VwidSensor(Entity):
                 if isinstance(element, dict):
                     for key2 in data['data'][key1].keys():
                         value = data['data'][key1][key2]
-                        key = key1 + '_' + key2
-                        if not ((type(value) in [dict, list]) or ('Timestamp' in key)):
-                            self.attrs[key] = value
+                        if not ((type(value) in [dict, list]) or ('Timestamp' in key2)):
+                            # Convert mix of camelcase and snakecase to just camelcase
+                            key_camelcase = ''.join((x[:1].upper() + x[1:]) for x in key2.split('_'))
+                            self.attrs[key_camelcase] = value
                                 
             self._available = True
         else:
