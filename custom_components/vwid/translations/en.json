@@ -1,0 +1,16 @@
+{
+  "title": "Volkswagen ID",
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "name": "User name",
+          "password": "Password",
+          "vin": "Vehicle VIN"
+        },
+        "description": "Enter credentials and VIN.",
+        "title": "Configuration"
+      }
+    }
+  }
+}

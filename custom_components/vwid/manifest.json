@@ -1,0 +1,9 @@
+{
+  "codeowners": ["skagmo"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/skagmo/ha_vwid",
+  "domain": "vwid",
+  "name": "Volkswagen ID",
+  "requirements": []
+}
