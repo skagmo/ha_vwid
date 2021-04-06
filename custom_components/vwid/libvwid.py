@@ -115,8 +115,9 @@ class vwid:
 		response = await self.session.get(LOGIN_BASE + '/refresh/v1', headers=self.headers)
 		if response.status >= 400:
 			return False
+		self.tokens = await response.json()
 		
-		self.tokens = response.json()
+		# Use the newly received access token
 		self.headers['Authorization'] = 'Bearer %s' % self.tokens["accessToken"]
 
 		return True
