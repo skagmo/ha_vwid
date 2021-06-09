@@ -61,7 +61,26 @@ class vwid:
 		# Fill form with password
 		(form, action) = self.form_from_response(await response.read())
 		form['password'] = self.password
-		response = await self.session.post(LOGIN_HANDLER_BASE+action, data=form, allow_redirects=False)
+		url = LOGIN_HANDLER_BASE + action
+		response = await self.session.post(url, data=form, allow_redirects=False)
+
+		# Can get a 303 redirect for a "terms and conditions" page
+		if (response.status == 303):
+			url = response.headers['Location']
+			if ("terms-and-conditions" in url):
+				# Get terms and conditions page
+				url = LOGIN_HANDLER_BASE + url
+				response = await self.session.get(url, data=form, allow_redirects=False)
+
+				(form, action) = self.form_from_response(await response.read())
+				url = LOGIN_HANDLER_BASE + action
+				response = await self.session.post(url, data=form, allow_redirects=False)
+
+				self.log.warn("Agreed to terms and conditions")
+			else:
+				self.log.error("Got unknown 303 redirect")
+				return False
+
 		# Handle every single redirect and stop if the redirect
 		# URL uses the weconnect adapter.
 		while (True):
@@ -76,7 +95,7 @@ class vwid:
 				break
 
 			if (response.status != 302):
-				self.log.error("Not redirected")
+				self.log.error("Not redirected, status %u" % response.status)
 				return False
 
 			response = await self.session.get(url, data=form, allow_redirects=False)
