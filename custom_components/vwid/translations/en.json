@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "data": {
-          "name": "User name",
+          "name": "Email",
           "password": "Password",
           "vin": "Vehicle VIN"
         },
