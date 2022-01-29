@@ -9,6 +9,7 @@ import lxml.html
 import logging
 import aiohttp
 import asyncio
+import json
 
 # Constants
 LOGIN_BASE = "https://login.apps.emea.vwapps.io"
@@ -26,6 +27,45 @@ class vwid:
 		elements = page.xpath('//form//input[@type="hidden"]')
 		form = {x.attrib['name']: x.attrib['value'] for x in elements}
 		return (form, page.forms[0].action)
+
+	def password_form(self, text):
+		page = lxml.html.fromstring(text)
+		elements = page.xpath('//script')
+
+		# Todo: Find more elegant way parse this...
+		objects = {}
+		for a in elements:
+			if (a.text) and (a.text.find('window._IDK') != -1):
+				text = a.text.strip()
+				text = text[text.find('\n'):text.rfind('\n')].strip()
+
+				for line in text.split('\n'):
+					(name, val) = line.strip().split(':', 1)
+					val = val.strip('\', ')
+					objects[name] = val
+
+		json_model = json.loads(objects['templateModel'])
+
+		if ('errorCode' in json_model):
+			self.log.error("Login error: %s", json_model['errorCode'])
+			return False
+
+		try:
+			# Generate form
+			form = {}
+			form['relayState'] = json_model['relayState']
+			form['hmac'] = json_model['hmac']
+			form['email'] = json_model['emailPasswordForm']['email']
+			form['_csrf'] = objects['csrf_token']
+
+			# Generate URL action
+			action = '/signin-service/v1/%s/%s' % (json_model['clientLegalEntityModel']['clientId'], json_model['postAction'])
+
+			return (form, action)
+
+		except KeyError:
+			self.log.error("Missing fields in response from VW API")
+			return False
 
 	def set_vin(self, vin):
 		self.vin = vin
@@ -59,7 +99,7 @@ class vwid:
 			return False
 			
 		# Fill form with password
-		(form, action) = self.form_from_response(await response.read())
+		(form, action) = self.password_form(await response.read())
 		form['password'] = self.password
 		url = LOGIN_HANDLER_BASE + action
 		response = await self.session.post(url, data=form, allow_redirects=False)
