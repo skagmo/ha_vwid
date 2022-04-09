@@ -85,7 +85,7 @@ class VwidSensor(Entity):
         return '%'
 
     @property
-    def device_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> Dict[str, Any]:
         return self.attrs
 
     async def async_update(self):
