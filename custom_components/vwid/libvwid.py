@@ -38,9 +38,11 @@ class vwid:
 			if (a.text) and (a.text.find('window._IDK') != -1):
 				text = a.text.strip()
 				text = text[text.find('\n'):text.rfind('\n')].strip()
-
 				for line in text.split('\n'):
-					(name, val) = line.strip().split(':', 1)
+					try:
+						(name, val) = line.strip().split(':', 1)
+					except ValueError:
+						continue
 					val = val.strip('\', ')
 					objects[name] = val
 
