@@ -43,6 +43,7 @@ async def async_setup_entry(
     api = vwid(session)
     api.set_credentials(config[CONF_NAME], config[CONF_PASSWORD])
     api.set_vin(config[CONF_VIN])
+    api.set_jobs(['charging','climatisation'])
     sensor = VwidSensor(api)
     async_add_entities([sensor], update_before_add=True)
 
@@ -92,17 +93,21 @@ class VwidSensor(Entity):
         data = await self.api.get_status()
         if (data):
             # Add state of charge as value
-            self._state = int(data['data']['batteryStatus']['currentSOC_pct'])
+            self._state = int(data['charging']['batteryStatus']['value']['currentSOC_pct'])
 
-            # For now, just flatten tree structure and add two-level deep parameters as attributes
-            for key1 in data['data'].keys():
-                element = data['data'][key1]
-                if isinstance(element, dict):
-                    for key2 in data['data'][key1].keys():
-                        value = data['data'][key1][key2]
-                        if not ((type(value) in [dict, list]) or ('Timestamp' in key2)):
+            # For now, just flatten tree structure and add parameters as attributes
+            # Data structure is 4 levels deep
+            # Todo: Recursive function to flatten structure
+            for key1 in data.keys():
+                for key2 in data[key1].keys():
+                    for key3 in data[key1][key2].keys():
+                        for key4 in data[key1][key2][key3].keys():
+                            value = data[key1][key2][key3][key4]
+                            # Skip timestamps, dictionaries and lists
+                            if (type(value) in [dict, list]) or ("Timestamp" in key4):
+                                continue
                             # Convert mix of camelcase and snakecase to just camelcase
-                            key_camelcase = ''.join((x[:1].upper() + x[1:]) for x in key2.split('_'))
+                            key_camelcase = ''.join((x[:1].upper() + x[1:]) for x in key4.split('_'))
                             self.attrs[key_camelcase] = value
                                 
             self._available = True
