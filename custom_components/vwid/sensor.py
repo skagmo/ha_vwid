@@ -12,6 +12,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
     ENTITY_ID_FORMAT,
+    SensorDeviceClass
 )
 from homeassistant.const import (
     ATTR_NAME,
@@ -79,7 +80,7 @@ class VwidSensor(Entity):
         
     @property
     def device_class(self):
-        return DEVICE_CLASS_BATTERY
+        return SensorDeviceClass.BATTERY
         
     @property
     def unit_of_measurement(self):
@@ -91,26 +92,34 @@ class VwidSensor(Entity):
 
     async def async_update(self):
         data = await self.api.get_status()
-        if (data):
-            # Add state of charge as value
-            self._state = int(data['charging']['batteryStatus']['value']['currentSOC_pct'])
-
-            # For now, just flatten tree structure and add parameters as attributes
-            # Data structure is 4 levels deep
-            # Todo: Recursive function to flatten structure
-            for key1 in data.keys():
-                for key2 in data[key1].keys():
-                    for key3 in data[key1][key2].keys():
-                        for key4 in data[key1][key2][key3].keys():
-                            value = data[key1][key2][key3][key4]
-                            # Skip timestamps, dictionaries and lists
-                            if (type(value) in [dict, list]) or ("Timestamp" in key4):
-                                continue
-                            # Convert mix of camelcase and snakecase to just camelcase
-                            key_camelcase = ''.join((x[:1].upper() + x[1:]) for x in key4.split('_'))
-                            self.attrs[key_camelcase] = value
-                                
-            self._available = True
-        else:
+        
+        if not data:
             self._available = False
             _LOGGER.exception("Error retrieving data")
+            return
+            
+        try:
+            # Add state of charge as value
+            self._state = int(data['charging']['batteryStatus']['value']['currentSOC_pct'])
+        except KeyError:
+            self._available = False
+            _LOGGER.exception(f"Missing keys in data: {data}")
+            return
+            
+        self._available = True
+        
+        # For now, just flatten tree structure and add parameters as attributes
+        # Data structure is 4 levels deep
+        # Todo: Recursive function to flatten structure
+        for key1 in data.keys():
+            for key2 in data[key1].keys():
+                for key3 in data[key1][key2].keys():
+                    for key4 in data[key1][key2][key3].keys():
+                        value = data[key1][key2][key3][key4]
+                        # Skip timestamps, dictionaries and lists
+                        if (type(value) in [dict, list]) or ("Timestamp" in key4):
+                            continue
+                        # Convert mix of camelcase and snakecase to just camelcase
+                        key_camelcase = ''.join((x[:1].upper() + x[1:]) for x in key4.split('_'))
+                        self.attrs[key_camelcase] = value
+
