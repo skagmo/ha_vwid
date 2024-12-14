@@ -17,13 +17,11 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     ATTR_NAME,
     CONF_NAME,
-    CONF_PASSWORD,
-    DEVICE_CLASS_BATTERY,
+    CONF_PASSWORD
 )
 from homeassistant.helpers.typing import (
     ConfigType,
-    DiscoveryInfoType,
-    HomeAssistantType,
+    DiscoveryInfoType
 )
 from .const import (
     DOMAIN,
